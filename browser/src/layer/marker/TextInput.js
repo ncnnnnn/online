@@ -419,6 +419,7 @@ L.TextInput = L.Layer.extend({
 		this._textArea.setAttribute('disabled', true);
 
 		if (L.Browser.cypressTest) {
+			this._textArea._cylog = '';
 			var that = this;
 			this._textArea._hasAccessibilitySupport = function() {
 				return that.hasAccessibilitySupport();
@@ -431,6 +432,15 @@ L.TextInput = L.Layer.extend({
 			};
 			this._textArea._getSelectionEnd = function() {
 				return that._getSelectionEnd();
+			};
+			this._textArea._hasAnySelection = function() {
+				return that._hasAnySelection;
+			};
+			this._textArea._isEditingInSelection = function() {
+				return that._isEditingInSelection;
+			};
+			this._textArea._isInputPrevented = function() {
+				return that._isInputPrevented;
 			};
 		}
 
@@ -614,7 +624,7 @@ L.TextInput = L.Layer.extend({
 
 			state += '[' + this._deleteHint + '] ';
 
-			window.app.console.log(
+			this._cylog(
 				+ new Date() + ' %cINPUT%c: ' + state
 				+ '"' + content + '" ' + type + '%c ',
 				'background:#bfb;color:black',
@@ -627,7 +637,7 @@ L.TextInput = L.Layer.extend({
 
 	_handleMisplacedCursorAtBeginning: function(ev) {
 		// It seems some inputs e.g. GBoard can magically move the cursor from " | " to "|  "
-		window.app.console.log('Oh dear, gboard sabotaged our cursor position, fixing');
+		this._log('Oh dear, gboard sabotaged our cursor position, fixing');
 		// But when we detect the problem only emit a delete when we have one.
 		if (ev.inputType && ev.inputType === 'deleteContentBackward')
 		{
@@ -660,7 +670,7 @@ L.TextInput = L.Layer.extend({
 		// Firefox is not able to delete the <img> post space. Since no 'input' event is generated,
 		// we need to handle a <delete> at the end of the paragraph, here.
 		if (L.Browser.gecko && this._isCursorAtEnd() && this._deleteHint === 'delete') {
-			window.app.console.log('Sending delete');
+			this._log('Sending delete');
 			this._removeTextContent(0, 1);
 			this._emptyArea();
 		}
@@ -683,7 +693,7 @@ L.TextInput = L.Layer.extend({
 		app.idleHandler.notifyActive();
 
 		if (this._ignoreInputCount > 0) {
-			window.app.console.log('ignoring synthetic input ' + this._ignoreInputCount);
+			this._log('ignoring synthetic input ' + this._ignoreInputCount);
 			return;
 		}
 
@@ -705,14 +715,14 @@ L.TextInput = L.Layer.extend({
 		// We use a different leading and terminal space character
 		// to differentiate backspace from delete, then replace the character.
 		if (!this._hasPreSpace()) { // missing initial space
-			window.app.console.log('Sending backspace');
+			this._log('Sending backspace');
 			if (!ignoreBackspace)
 				this._removeTextContent(1, 0);
 			this._emptyArea();
 			return;
 		}
 		if (!this._hasPostSpace()) { // missing trailing space.
-			window.app.console.log('Sending delete');
+			this._log('Sending delete');
 			this._removeTextContent(0, 1);
 			this._emptyArea();
 			return;
@@ -736,7 +746,7 @@ L.TextInput = L.Layer.extend({
 		while (matchTo < sharedLength && content[matchTo] === this._lastContent[matchTo])
 			matchTo++;
 
-		window.app.console.log('Comparison matchAt ' + matchTo + '\n' +
+		this._log('Comparison matchAt ' + matchTo + '\n' +
 			    '\tnew "' + this.codePointsToString(content) + '" (' + content.length + ')' + '\n' +
 			    '\told "' + this.codePointsToString(this._lastContent) + '" (' + this._lastContent.length + ')');
 
@@ -880,7 +890,7 @@ L.TextInput = L.Layer.extend({
 		// empty string.
 		// FIXME: is that true !? ...
 
-		// window.app.console.log('Set old/lastContent to empty');
+		// this._log('Set old/lastContent to empty');
 		this._lastContent = [];
 		if (this.hasAccessibilitySupport()) {
 			this._setLastCursorPosition(0);
@@ -981,6 +991,7 @@ L.TextInput = L.Layer.extend({
 			}
 		}
 
+		this._isInputPrevented = false;
 		if (this.hasAccessibilitySupport()) {
 			if ((this._hasAnySelection && !this._isEditingInSelection && this._map.getDocType() !== 'spreadsheet') ||
 				(!this._hasAnySelection && this._map.getDocType() === 'presentation')) {
@@ -991,7 +1002,8 @@ L.TextInput = L.Layer.extend({
 					(this._newlineHint && ev.shiftKey);
 				if (!allowedKeyEvent) {
 					window.console.log('TextInput._onKeyDown: any input default prevented since no shape editing is active.');
-					ev.preventDefault();
+					this._isInputPrevented = true;
+					// ev.preventDefault();
 				}
 			}
 			// In order to allow screen reader to track caret navigation properly even if there is some connection delay
@@ -1011,7 +1023,7 @@ L.TextInput = L.Layer.extend({
 					if (!this._isSelectionValid() || this._isComposing ||
 						(this._isLeftRightArrow > 0 && this._isCursorAtEnd()) ||
 						(this._isLeftRightArrow < 0 && this._isCursorAtStart())) {
-						this._log('_onKeyDown: preventDefault');
+						this._dbg('_onKeyDown: preventDefault');
 						ev.preventDefault();
 					}
 				}
@@ -1051,7 +1063,7 @@ L.TextInput = L.Layer.extend({
 							// is already handled earlier.
 							if (!(this._listPrefixLength > 0 &&
 								this._lastCursorPosition === this._listPrefixLength && this._isLeftRightArrow < 0)) {
-								this._log('_onKeyDown: pressed left/right arrows with selected text');
+								this._dbg('_onKeyDown: pressed left/right arrows with selected text');
 								ev.preventDefault();
 								var pos = this._lastCursorPosition + this._isLeftRightArrow;
 								// _updateCursorPosition takes care to normalize pos value
@@ -1159,7 +1171,7 @@ L.TextInput = L.Layer.extend({
 	// message.
 	// Will remove characters from the queue first, if there are any.
 	_removeTextContent: function(before, after) {
-		window.app.console.log('Remove ' + before + ' before, and ' + after + ' after');
+		this._log('Remove ' + before + ' before, and ' + after + ' after');
 
 		/// TODO: rename the event to 'removetextcontent' as soon as coolwsd supports it
 		/// TODO: Ask Marco about it
@@ -1277,7 +1289,7 @@ L.TextInput = L.Layer.extend({
 				// so its content is sent to the editable area.
 				this._justSwitchedToEditMode = false;
 				if (this._map._docLayer && this._map._docLayer._visibleCursor) {
-					window.app.console.log('A11yTextInput._setAcceptInput: going to emit a synthetic click after switching to edit mode.');
+					this._cylog('A11yTextInput._setAcceptInput: going to emit a synthetic click after switching to edit mode.');
 					var top = this._map._docLayer._visibleCursor.getNorthWest();
 					var bottom = this._map._docLayer._visibleCursor.getSouthWest();
 					var center = L.latLng((top.lat + bottom.lat) / 2, top.lng);
@@ -1451,13 +1463,21 @@ L.TextInput = L.Layer.extend({
 			s = s + '0x' + text.charCodeAt(ii).toString(16);
 		}
 		s = s + ']';
-		window.app.console.log('L.' + this._className + '._sendText: ' + s);
+		this._log('L.' + this._className + '._sendText: ' + s);
 	},
 
-	_log: function(msg) {
+	_dbg: function(msg) {
 		if (!this._isDebugOn)
 			return;
+		this._log(msg);
+	},
+	
+	_log: function(msg) {
 		window.app.console.log(msg);
+	},
+
+	_cylog: function(msg) {
+		this._textArea._cylog += '[' + msg + ']\n';
 	},
 
 	_statusLog: function(header) {
@@ -1531,7 +1551,7 @@ L.TextInput = L.Layer.extend({
 		msg += '    focusOffset: ' + selection.focusOffset + '\n';
 		msg += '    is collapsed: ' + selection.isCollapsed + '\n';
 
-		window.app.console.log(msg);
+		this._log(msg);
 	}
 });
 

@@ -130,6 +130,7 @@ L.Map = L.Evented.extend({
 
 		if (L.Browser.cypressTest && window.enableAccessibility && window.isLocalStorageAllowed) {
 			this._accessibilityState = true;
+			window._accessibilityState = true;
 			window.localStorage.setItem('accessibilityState', 'true');
 		}
 

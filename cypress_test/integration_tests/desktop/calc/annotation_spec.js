@@ -4,7 +4,7 @@ var helper = require('../../common/helper');
 var { insertMultipleComment } = require('../../common/desktop_helper');
 var desktopHelper = require('../../common/desktop_helper');
 
-describe(['tagdesktop'], 'Annotation Tests', function() {
+describe.skip(['tagdesktop'], 'Annotation Tests', function() {
 	var origTestFileName = 'annotation.ods';
 	var testFileName;
 

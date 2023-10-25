@@ -923,6 +923,7 @@ L.Map.include({
 		if (this._accessibilityState === enable)
 			return;
 		this._accessibilityState = enable;
+		window._accessibilityState = enable;
 		app.socket.sendMessage('a11ystate ' + enable);
 
 		this.removeLayer(this._textInput);

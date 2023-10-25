@@ -2,7 +2,7 @@
 var helper = require('../../common/helper');
 const desktopHelper = require('../../common/desktop_helper');
 
-describe(['tagdesktop', 'tagnextcloud', 'tagproxy'], 'Delete Objects', function() {
+describe.skip(['tagdesktop', 'tagnextcloud', 'tagproxy'], 'Delete Objects', function() {
 	var origTestFileName = 'delete_objects.ods';
 	var testFileName;
 

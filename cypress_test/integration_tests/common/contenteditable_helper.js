@@ -118,6 +118,46 @@ function checkSelectionIsEmpty(pos) {
 	_checkSelectionEnd(pos);
 }
 
+function checkAccessibilitySupport(value) {
+	cy.log('Check accessibility support');
+	cy.get('@clipboard').should(($c) => {
+		expect($c.get(0)._hasAccessibilitySupport()).to.eq(value);
+	});
+}
+
+function checkHasAnySelection(value) {
+	cy.log('Check has any selection');
+	cy.get('@clipboard').should(($c) => {
+		expect($c.get(0)._hasAnySelection()).to.eq(value);
+	});
+}
+
+function checkIsEditingInSelection(value) {
+	cy.log('Check is editing in selection');
+	cy.get('@clipboard').should(($c) => {
+		expect($c.get(0)._isEditingInSelection()).to.eq(value);
+	});
+}
+
+function checkIsInputPrevented(value) {
+	cy.log('Check is input prevented');
+	cy.get('@clipboard').should(($c) => {
+		expect($c.get(0)._isInputPrevented()).to.eq(value);
+	});
+}
+
+function checkLog() {
+	cy.wait(500);
+	cy.log('DEBUG LOG START ==================');
+	cy.get('@clipboard').then(clipboard => {
+		cy.log('CYLOG:\n' + clipboard.get(0)._cylog);
+	});
+	cy.log('DEBUG LOG END ==================');
+	cy.get('@clipboard').should('have.prop', 'foo', '');
+	cy.wait(500);
+}
+
+
 module.exports.type = type;
 module.exports.moveCaret = moveCaret;
 module.exports.select = select;
@@ -127,3 +167,8 @@ module.exports.checkSelectionRange = checkSelectionRange;
 module.exports.checkCaretPosition = checkCaretPosition;
 module.exports.checkSelectionIsNull = checkSelectionIsNull;
 module.exports.checkSelectionIsEmpty = checkSelectionIsEmpty;
+module.exports.checkAccessibilitySupport = checkAccessibilitySupport;
+module.exports.checkHasAnySelection = checkHasAnySelection;
+module.exports.checkIsEditingInSelection = checkIsEditingInSelection;
+module.exports.checkIsInputPrevented = checkIsInputPrevented;
+module.exports.checkLog = checkLog;

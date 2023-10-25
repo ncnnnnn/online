@@ -37,6 +37,10 @@ describe(['taga11yenabled'], 'Editable area - Basic typing and caret moving', fu
         cy.cGet('#toolbar-up > .w2ui-scroll-right').click();
         cy.cGet('#tb_editbar_item_modifypage').click();
         cy.cGet('div.clipboard').as('clipboard');
+        cy.window().then(win => {
+            cy.log('WINDOW.ENABLEACCESSIBILITY: ' + win['0'].enableAccessibility);
+            cy.log('WINDOW.ACCESSIBILITYSTATE: ' + win['0']._accessibilityState);
+        });
     });
 
     afterEach(function () {
@@ -77,6 +81,8 @@ describe(['taga11yenabled'], 'Editable area - Basic typing and caret moving', fu
         ceHelper.type('Hello World');
         ceHelper.checkHTMLContent('Hello World');
         ceHelper.checkCaretPosition(11);
+        cy.wait(2000);
+        ceHelper.checkLog();
         // backspace
         ceHelper.moveCaret('left', '', 4);
         ceHelper.type('{backspace}');

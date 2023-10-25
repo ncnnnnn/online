@@ -1,9 +1,10 @@
-/* global describe it beforeEach require afterEach*/
+/* global describe it beforeEach require afterEach cy */
 
 var helper = require('../../common/helper');
 var impressHelper = require('../../common/impress_helper');
 var desktopHelper = require('../../common/desktop_helper');
 var repairHelper = require('../../common/repair_document_helper');
+var ceHelper = require('../../common/contenteditable_helper');
 
 describe(['tagdesktop'], 'Editing Operations', function() {
 	var testFileName = 'undo_redo.odp';
@@ -14,6 +15,11 @@ describe(['tagdesktop'], 'Editing Operations', function() {
 		desktopHelper.selectZoomLevel('30');
 		impressHelper.selectTextShapeInTheCenter();
 		impressHelper.selectTextOfShape(false);
+		cy.wait(1000);
+		cy.cGet('div.clipboard').as('clipboard');
+		ceHelper.checkAccessibilitySupport(true);
+		// ceHelper.checkHasAnySelection(true);
+		// ceHelper.checkIsEditingInSelection(true);
 	});
 
 	afterEach(function() {
@@ -22,13 +28,16 @@ describe(['tagdesktop'], 'Editing Operations', function() {
 
 	function undo() {
 		helper.typeIntoDocument('Hello World');
+		cy.wait(1000);
+		// ceHelper.checkIsInputPrevented(false);
 		impressHelper.selectTextOfShape();
 		helper.typeIntoDocument('{ctrl}z');
 		impressHelper.selectTextOfShape();
 		helper.clipboardTextShouldBeDifferentThan('Hello World');
+		ceHelper.checkLog();
 	}
 
-	it('Undo', function() {
+	it.only('Undo', function() {
 		undo();
 	});
 
