@@ -22,8 +22,9 @@ L.CalcTileLayer = L.CanvasTileLayer.extend({
 		var comment = null;
 
 		for (var i = 0; i < commentList.length; i++) {
-			if (this._cellCursorTwips.contains(commentList[i].sectionProperties.data.cellPos)) {
-				if (commentList[i].sectionProperties.data.tab == this._selectedPart) {
+			if (commentList[i].sectionProperties.data.tab == this._selectedPart) {
+				var cellPos = this._cellRangeToTwipRect(commentList[i].sectionProperties.data.cellRange).toRectangle();
+				if (this._cellCursorTwips.contains(cellPos)) {
 					comment = commentList[i];
 					break;
 				}
@@ -31,8 +32,10 @@ L.CalcTileLayer = L.CanvasTileLayer.extend({
 		}
 
 		if (!comment) {
+			var cellAddress = app.file.calc.cellCursor.address;
 			var newComment = {
-				cellPos: app.file.calc.cellCursor.rectangle.twips.slice(), // Copy the array.
+				// TODO, what's the situation with a merged cell?
+				cellRange: [cellAddress[0], cellAddress[1], cellAddress[0], cellAddress[1]].toString(),
 				anchorPos: app.file.calc.cellCursor.rectangle.twips.slice(), // Copy the array.
 				id: 'new',
 				tab: this._selectedPart,
@@ -119,15 +122,12 @@ L.CalcTileLayer = L.CanvasTileLayer.extend({
 		if (textMsg.startsWith('invalidateheader: column')) {
 			this.refreshViewData({x: this._map._getTopLeftPoint().x, y: 0,
 				offset: {x: undefined, y: 0}}, true /* compatDataSrcOnly */);
-			app.socket.sendMessage('commandvalues command=.uno:ViewAnnotationsPosition');
 		} else if (textMsg.startsWith('invalidateheader: row')) {
 			this.refreshViewData({x: 0, y: this._map._getTopLeftPoint().y,
 				offset: {x: 0, y: undefined}}, true /* compatDataSrcOnly */);
-			app.socket.sendMessage('commandvalues command=.uno:ViewAnnotationsPosition');
 		} else if (textMsg.startsWith('invalidateheader: all')) {
 			this.refreshViewData({x: this._map._getTopLeftPoint().x, y: this._map._getTopLeftPoint().y,
 				offset: {x: undefined, y: undefined}}, true /* compatDataSrcOnly */);
-			app.socket.sendMessage('commandvalues command=.uno:ViewAnnotationsPosition');
 		} else if (this.options.sheetGeometryDataEnabled &&
 				textMsg.startsWith('invalidatesheetgeometry:')) {
 			var params = textMsg.substring('invalidatesheetgeometry:'.length).trim().split(' ');
@@ -246,7 +246,6 @@ L.CalcTileLayer = L.CanvasTileLayer.extend({
 		this._map.fire('zoomchanged');
 		this.refreshViewData();
 		this._replayPrintTwipsMsgs(false);
-		app.socket.sendMessage('commandvalues command=.uno:ViewAnnotationsPosition');
 	},
 
 	_restrictDocumentSize: function () {
@@ -929,8 +928,9 @@ L.CalcTileLayer = L.CanvasTileLayer.extend({
 							break;
 						}
 					}
-					if (commentObject)
-						commentObject.sectionProperties.data.cellPos = this._cellRangeToTwipRect(comment.cellRange).toRectangle();
+					if (commentObject) {
+						commentObject.sectionProperties.data.cellRange = comment.cellRange;
+					}
 				}
 			}
 
